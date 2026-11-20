@@ -1,671 +1,442 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl" data-theme="dark">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>داشبورد اخبار محیط زیست</title>
-
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
-
-  <style>
-    /* ══════════════════════════════════════════════
-       متغیرهای رنگی — حالت تاریک و روشن
-    ══════════════════════════════════════════════ */
-    :root {
-      --bg-page:       #0f172a;
-      --bg-card:       #1e293b;
-      --bg-card2:      #263347;
-      --bg-header:     #0f172a;
-      --border:        #334155;
-      --text-primary:  #f1f5f9;
-      --text-secondary:#94a3b8;
-      --text-muted:    #64748b;
-      --accent:        #22c55e;
-      --accent-light:  #16a34a;
-      --accent-glow:   rgba(34,197,94,0.15);
-      --red:           #ef4444;
-      --orange:        #f97316;
-      --yellow:        #eab308;
-      --blue:          #3b82f6;
-      --purple:        #a855f7;
-      --cyan:          #06b6d4;
-      --shadow:        0 4px 24px rgba(0,0,0,0.4);
-      --radius:        16px;
-      --radius-sm:     10px;
-    }
-
-    [data-theme="light"] {
-      --bg-page:       #f0fdf4;
-      --bg-card:       #ffffff;
-      --bg-card2:      #f8fafc;
-      --bg-header:     #ffffff;
-      --border:        #e2e8f0;
-      --text-primary:  #0f172a;
-      --text-secondary:#475569;
-      --text-muted:    #94a3b8;
-      --accent:        #16a34a;
-      --accent-light:  #15803d;
-      --accent-glow:   rgba(22,163,74,0.1);
-      --shadow:        0 4px 24px rgba(0,0,0,0.08);
-    }
-
-    /* ══════════════════════════════════════════════
-       پایه
-    ══════════════════════════════════════════════ */
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      font-family: 'Segoe UI', Tahoma, 'Vazirmatn', sans-serif;
-      background: var(--bg-page);
-      color: var(--text-primary);
-      min-height: 100vh;
-      transition: background 0.3s, color 0.3s;
-      font-size: 15px;
-      line-height: 1.6;
-    }
-
-    /* ══════════════════════════════════════════════
-       هدر
-    ══════════════════════════════════════════════ */
-    .header {
-      background: var(--bg-header);
-      border-bottom: 1px solid var(--border);
-      padding: 0 24px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: var(--shadow);
-    }
-
-    .header-inner {
-      max-width: 1400px;
-      margin: 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 64px;
-      gap: 16px;
-    }
-
-    .header-logo {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--accent);
-    }
-
-    .header-logo span { font-size: 28px; }
-
-    .header-subtitle {
-      font-size: 12px;
-      color: var(--text-muted);
-      font-weight: 400;
-    }
-
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    /* وضعیت live */
-    .live-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--accent-glow);
-      border: 1px solid var(--accent);
-      border-radius: 20px;
-      padding: 4px 12px;
-      font-size: 12px;
-      color: var(--accent);
-      font-weight: 600;
-    }
-
-    .live-dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: var(--accent);
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50%       { opacity: 0.5; transform: scale(0.8); }
-    }
-
-    /* دکمه تم */
-    .theme-btn {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 7px 14px;
-      color: var(--text-secondary);
-      cursor: pointer;
-      font-size: 18px;
-      transition: all 0.2s;
-      display: flex; align-items: center;
-    }
-    .theme-btn:hover { background: var(--border); color: var(--text-primary); }
-
-    /* دکمه رفرش */
-    .refresh-btn {
-      background: var(--accent);
-      border: none;
-      border-radius: var(--radius-sm);
-      padding: 7px 16px;
-      color: #fff;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      display: flex; align-items: center; gap: 6px;
-      transition: background 0.2s;
-    }
-    .refresh-btn:hover { background: var(--accent-light); }
-    .refresh-btn.spinning svg { animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ══════════════════════════════════════════════
-       بدنه اصلی
-    ══════════════════════════════════════════════ */
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 24px 16px 48px;
-    }
-
-    /* نوار خلاصه آخرین اجرا */
-    .run-banner {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 14px 20px;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .run-banner-item {
-      display: flex; align-items: center; gap: 8px;
-      font-size: 13px; color: var(--text-secondary);
-    }
-    .run-banner-item strong { color: var(--text-primary); }
-
-    /* ══════════════════════════════════════════════
-       کارت‌های عددی
-    ══════════════════════════════════════════════ */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .stat-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      position: relative;
-      overflow: hidden;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
-
-    .stat-card::before {
-      content: '';
-      position: absolute;
-      top: 0; right: 0;
-      width: 4px; height: 100%;
-    }
-    .stat-card.green::before  { background: var(--accent); }
-    .stat-card.blue::before   { background: var(--blue); }
-    .stat-card.orange::before { background: var(--orange); }
-    .stat-card.purple::before { background: var(--purple); }
-    .stat-card.red::before    { background: var(--red); }
-    .stat-card.cyan::before   { background: var(--cyan); }
-
-    .stat-icon {
-      font-size: 32px;
-      margin-bottom: 8px;
-      display: block;
-    }
-
-    .stat-value {
-      font-size: 36px;
-      font-weight: 800;
-      line-height: 1;
-      margin-bottom: 4px;
-    }
-    .stat-card.green  .stat-value { color: var(--accent); }
-    .stat-card.blue   .stat-value { color: var(--blue); }
-    .stat-card.orange .stat-value { color: var(--orange); }
-    .stat-card.purple .stat-value { color: var(--purple); }
-    .stat-card.red    .stat-value { color: var(--red); }
-    .stat-card.cyan   .stat-value { color: var(--cyan); }
-
-    .stat-label {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 10px;
-    }
-
-    .stat-sub {
-      font-size: 11px;
-      color: var(--text-muted);
-      background: var(--bg-card2);
-      border-radius: 6px;
-      padding: 3px 8px;
-      display: inline-block;
-    }
-
-    /* ══════════════════════════════════════════════
-       سطرهای دوتایی نمودار
-    ══════════════════════════════════════════════ */
-    .charts-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .charts-row-3 {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    @media (max-width: 900px) {
-      .charts-row, .charts-row-3 { grid-template-columns: 1fr; }
-    }
-
-    /* ══════════════════════════════════════════════
-       کارت نمودار
-    ══════════════════════════════════════════════ */
-    .chart-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-    }
-
-    .card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 20px;
-    }
-
-    .card-title {
-      font-size: 15px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .card-badge {
-      font-size: 11px;
-      padding: 2px 10px;
-      border-radius: 20px;
-      font-weight: 600;
-    }
-    .badge-green  { background: var(--accent-glow); color: var(--accent); border: 1px solid var(--accent); }
-    .badge-blue   { background: rgba(59,130,246,0.1); color: var(--blue); border: 1px solid var(--blue); }
-    .badge-orange { background: rgba(249,115,22,0.1); color: var(--orange); border: 1px solid var(--orange); }
-
-    .chart-wrap {
-      position: relative;
-      height: 280px;
-    }
-
-    .chart-wrap-sm {
-      position: relative;
-      height: 240px;
-    }
-
-    /* ══════════════════════════════════════════════
-       جدول دسته‌بندی‌ها
-    ══════════════════════════════════════════════ */
-    .cat-list { list-style: none; }
-
-    .cat-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 0;
-      border-bottom: 1px solid var(--border);
-    }
-    .cat-item:last-child { border-bottom: none; }
-
-    .cat-emoji { font-size: 20px; width: 28px; text-align: center; flex-shrink: 0; }
-
-    .cat-name {
-      flex: 1;
-      font-size: 13px;
-      color: var(--text-secondary);
-    }
-
-    .cat-bar-wrap {
-      width: 100px;
-      height: 6px;
-      background: var(--border);
-      border-radius: 3px;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-
-    .cat-bar {
-      height: 100%;
-      border-radius: 3px;
-      background: var(--accent);
-      transition: width 1s ease;
-    }
-
-    .cat-count {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--text-primary);
-      min-width: 36px;
-      text-align: left;
-      flex-shrink: 0;
-    }
-
-    /* ══════════════════════════════════════════════
-       جدول منابع
-    ══════════════════════════════════════════════ */
-    .table-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 20px;
-      margin-bottom: 24px;
-      overflow-x: auto;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    thead th {
-      text-align: right;
-      padding: 10px 12px;
-      color: var(--text-muted);
-      font-weight: 600;
-      border-bottom: 1px solid var(--border);
-      white-space: nowrap;
-    }
-
-    tbody tr { transition: background 0.15s; }
-    tbody tr:hover { background: var(--bg-card2); }
-
-    tbody td {
-      padding: 10px 12px;
-      border-bottom: 1px solid var(--border);
-      color: var(--text-secondary);
-      vertical-align: middle;
-    }
-    tbody tr:last-child td { border-bottom: none; }
-
-    .rank-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 24px; height: 24px;
-      border-radius: 50%;
-      font-size: 12px;
-      font-weight: 700;
-    }
-    .rank-1 { background: #fbbf24; color: #000; }
-    .rank-2 { background: #94a3b8; color: #000; }
-    .rank-3 { background: #c97c3a; color: #fff; }
-    .rank-n { background: var(--bg-card2); color: var(--text-muted); }
-
-    .source-bar-wrap {
-      width: 80px; height: 5px;
-      background: var(--border);
-      border-radius: 3px;
-      overflow: hidden;
-      display: inline-block;
-      vertical-align: middle;
-      margin-right: 8px;
-    }
-    .source-bar { height: 100%; background: var(--blue); border-radius: 3px; }
-
-    /* ══════════════════════════════════════════════
-       کارت سلامت منابع
-    ══════════════════════════════════════════════ */
-    .health-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-
-    .health-card {
-      background: var(--bg-card2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 14px;
-      text-align: center;
-    }
-
-    .health-num {
-      font-size: 32px;
-      font-weight: 800;
-      line-height: 1;
-      margin-bottom: 4px;
-    }
-    .h-green  { color: var(--accent); }
-    .h-yellow { color: var(--yellow); }
-    .h-orange { color: var(--orange); }
-    .h-red    { color: var(--red); }
-    .h-gray   { color: var(--text-muted); }
-
-    .health-label { font-size: 12px; color: var(--text-muted); }
-
-    /* ══════════════════════════════════════════════
-       فیلتر فیلتر آمار
-    ══════════════════════════════════════════════ */
-    .filter-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 24px;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .filter-row h2 {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text-secondary);
-    }
-
-    .tab-group {
-      display: flex;
-      gap: 6px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 4px;
-    }
-
-    .tab-btn {
-      padding: 5px 14px;
-      border: none;
-      border-radius: 7px;
-      background: transparent;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 12px;
-      font-weight: 600;
-      transition: all 0.2s;
-    }
-    .tab-btn.active {
-      background: var(--accent);
-      color: #fff;
-    }
-
-    /* ══════════════════════════════════════════════
-       Footer
-    ══════════════════════════════════════════════ */
-    .footer {
-      text-align: center;
-      padding: 24px;
-      color: var(--text-muted);
-      font-size: 12px;
-      border-top: 1px solid var(--border);
-      margin-top: 24px;
-    }
-
-    /* ══════════════════════════════════════════════
-       Loading / Error
-    ══════════════════════════════════════════════ */
-    #loading-screen {
-      position: fixed;
-      inset: 0;
-      background: var(--bg-page);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      z-index: 999;
-      gap: 16px;
-    }
-
-    .spinner {
-      width: 48px; height: 48px;
-      border: 4px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
-
-    .loading-text { color: var(--text-secondary); font-size: 14px; }
-
-    #error-banner {
-      display: none;
-      background: rgba(239,68,68,0.1);
-      border: 1px solid var(--red);
-      border-radius: var(--radius);
-      padding: 16px 20px;
-      margin-bottom: 20px;
-      color: var(--red);
-      font-size: 13px;
-    }
-
-    /* ══════════════════════════════════════════════
-       Progress bar فیلتر
-    ══════════════════════════════════════════════ */
-    .filter-stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    .filter-item {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      padding: 14px 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-
-    .filter-icon { font-size: 22px; flex-shrink: 0; }
-
-    .filter-info { flex: 1; }
-    .filter-info .fi-label { font-size: 11px; color: var(--text-muted); margin-bottom: 2px; }
-    .filter-info .fi-val   { font-size: 20px; font-weight: 800; color: var(--text-primary); }
-
-    .filter-pct {
-      font-size: 12px;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 20px;
-    }
-    .pct-green  { background: var(--accent-glow); color: var(--accent); }
-    .pct-red    { background: rgba(239,68,68,0.1); color: var(--red); }
-    .pct-orange { background: rgba(249,115,22,0.1); color: var(--orange); }
-
-    /* ══════════════════════════════════════════════
-       Top category today
-    ══════════════════════════════════════════════ */
-    .today-banner {
-      background: linear-gradient(135deg, var(--accent-glow), transparent);
-      border: 1px solid var(--accent);
-      border-radius: var(--radius);
-      padding: 20px 24px;
-      margin-bottom: 24px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-
-    .today-left { display: flex; align-items: center; gap: 12px; }
-    .today-emoji { font-size: 40px; }
-    .today-label { font-size: 11px; color: var(--accent); font-weight: 600; margin-bottom: 4px; }
-    .today-title { font-size: 20px; font-weight: 800; }
-
-    .today-right { text-align: left; }
-    .today-count { font-size: 48px; font-weight: 900; color: var(--accent); line-height: 1; }
-    .today-sent-label { font-size: 12px; color: var(--text-muted); }
-
-    /* Responsive */
-    @media (max-width: 600px) {
-      .header-inner { height: auto; padding: 12px 0; flex-wrap: wrap; }
-      .stat-value { font-size: 28px; }
-      .live-badge span { display: none; }
-    }
-  </style>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>پایش اخبار محیط زیست</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+<style>
+/* ═══════════════════════════════════════════════════
+   متغیرها
+═══════════════════════════════════════════════════ */
+:root{
+  --bg:        #0b1120;
+  --bg2:       #111827;
+  --bg3:       #1a2537;
+  --card:      #162032;
+  --card2:     #1e2d42;
+  --border:    #1f3454;
+  --border2:   #2a4060;
+  --txt:       #e8f0fe;
+  --txt2:      #8ba3c7;
+  --txt3:      #516a8a;
+  --green:     #22c55e;
+  --green2:    #16a34a;
+  --green-bg:  rgba(34,197,94,.12);
+  --blue:      #3b82f6;
+  --orange:    #f97316;
+  --red:       #ef4444;
+  --yellow:    #eab308;
+  --purple:    #a855f7;
+  --cyan:      #06b6d4;
+  --shadow:    0 8px 32px rgba(0,0,0,.5);
+  --r:         14px;
+  --r2:        10px;
+}
+[data-theme=light]{
+  --bg:#f0fdf4; --bg2:#fff; --bg3:#f8fafc; --card:#fff; --card2:#f1f5f9;
+  --border:#e2e8f0; --border2:#cbd5e1;
+  --txt:#0f172a; --txt2:#475569; --txt3:#94a3b8;
+  --green:#16a34a; --green2:#15803d; --green-bg:rgba(22,163,74,.08);
+  --shadow:0 4px 20px rgba(0,0,0,.08);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+body{
+  font-family:'Segoe UI',Tahoma,sans-serif;
+  background:var(--bg);color:var(--txt);
+  min-height:100vh;line-height:1.6;
+  transition:background .3s,color .3s;
+}
+
+/* ── لودینگ ── */
+#splash{
+  position:fixed;inset:0;background:var(--bg);
+  display:flex;flex-direction:column;align-items:center;
+  justify-content:center;z-index:999;gap:20px;
+}
+.spin{
+  width:52px;height:52px;border-radius:50%;
+  border:4px solid var(--border2);
+  border-top-color:var(--green);
+  animation:spin .9s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.splash-txt{color:var(--txt2);font-size:14px}
+
+/* ── هدر ── */
+.hdr{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+  box-shadow:0 2px 20px rgba(0,0,0,.3);
+}
+.hdr-in{
+  max-width:1440px;margin:0 auto;
+  display:flex;align-items:center;
+  justify-content:space-between;
+  height:62px;padding:0 20px;gap:12px;
+}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{
+  width:40px;height:40px;border-radius:10px;
+  background:linear-gradient(135deg,var(--green),var(--cyan));
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex-shrink:0;
+}
+.logo-title{font-size:17px;font-weight:800;color:var(--green)}
+.logo-sub{font-size:11px;color:var(--txt3);margin-top:1px}
+.hdr-actions{display:flex;align-items:center;gap:8px}
+
+.live{
+  display:flex;align-items:center;gap:6px;
+  background:var(--green-bg);border:1px solid var(--green);
+  border-radius:20px;padding:4px 12px;
+  font-size:12px;color:var(--green);font-weight:600;
+}
+.live-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--green);animation:blink 2s infinite;
+}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+.btn-icon{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r2);padding:7px 12px;
+  color:var(--txt2);cursor:pointer;font-size:16px;
+  transition:all .2s;display:flex;align-items:center;
+}
+.btn-icon:hover{background:var(--border);color:var(--txt)}
+
+.btn-refresh{
+  background:var(--green);border:none;border-radius:var(--r2);
+  padding:7px 16px;color:#fff;cursor:pointer;
+  font-size:13px;font-weight:700;display:flex;align-items:center;gap:6px;
+  transition:background .2s;
+}
+.btn-refresh:hover{background:var(--green2)}
+.btn-refresh svg{transition:transform .3s}
+.btn-refresh.spin svg{animation:spin .8s linear infinite}
+
+/* ── کانتینر ── */
+.wrap{max-width:1440px;margin:0 auto;padding:20px 16px 60px}
+
+/* ── خطا ── */
+.err{
+  display:none;background:rgba(239,68,68,.1);
+  border:1px solid var(--red);border-radius:var(--r);
+  padding:14px 18px;margin-bottom:16px;
+  color:var(--red);font-size:13px;
+}
+
+/* ── نوار اجرا ── */
+.run-bar{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:12px 18px;
+  margin-bottom:18px;display:flex;
+  align-items:center;flex-wrap:wrap;gap:16px;
+}
+.run-item{display:flex;align-items:center;gap:7px;font-size:13px;color:var(--txt2)}
+.run-item strong{color:var(--txt)}
+
+/* ── کارت امروز ── */
+.today-card{
+  background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(6,182,212,.08));
+  border:1px solid var(--green);border-radius:var(--r);
+  padding:18px 22px;margin-bottom:18px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:14px;
+}
+.today-left{display:flex;align-items:center;gap:14px}
+.today-emoji{font-size:44px}
+.today-tag{font-size:11px;color:var(--green);font-weight:700;margin-bottom:3px}
+.today-title{font-size:20px;font-weight:800}
+.today-right{text-align:center}
+.today-num{font-size:52px;font-weight:900;color:var(--green);line-height:1}
+.today-lbl{font-size:12px;color:var(--txt3)}
+
+/* ── گرید کارت‌ها ── */
+.stat-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(190px,1fr));
+  gap:14px;margin-bottom:18px;
+}
+.stat{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:18px;
+  position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;
+}
+.stat:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.stat::after{
+  content:'';position:absolute;
+  top:0;right:0;width:4px;height:100%;
+}
+.stat.g::after{background:var(--green)}
+.stat.b::after{background:var(--blue)}
+.stat.o::after{background:var(--orange)}
+.stat.p::after{background:var(--purple)}
+.stat.c::after{background:var(--cyan)}
+.stat.r::after{background:var(--red)}
+
+.stat-ico{font-size:28px;margin-bottom:6px}
+.stat-val{font-size:34px;font-weight:900;line-height:1;margin-bottom:3px}
+.stat.g .stat-val{color:var(--green)}
+.stat.b .stat-val{color:var(--blue)}
+.stat.o .stat-val{color:var(--orange)}
+.stat.p .stat-val{color:var(--purple)}
+.stat.c .stat-val{color:var(--cyan)}
+.stat.r .stat-val{color:var(--red)}
+.stat-lbl{font-size:12px;color:var(--txt3);margin-bottom:8px}
+.stat-sub{
+  font-size:11px;background:var(--bg3);border-radius:6px;
+  padding:2px 8px;color:var(--txt2);display:inline-block;
+}
+
+/* ── سطرهای نمودار ── */
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.row3{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:18px}
+@media(max-width:860px){.row2,.row3{grid-template-columns:1fr}}
+
+/* ── کارت نمودار ── */
+.ch-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:18px;
+}
+.ch-hdr{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:16px;
+}
+.ch-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px}
+.badge{
+  font-size:11px;padding:2px 10px;border-radius:20px;font-weight:600;
+}
+.badge-g{background:var(--green-bg);color:var(--green);border:1px solid var(--green)}
+.badge-b{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid var(--blue)}
+.badge-o{background:rgba(249,115,22,.1);color:var(--orange);border:1px solid var(--orange)}
+.ch-wrap{position:relative;height:280px}
+.ch-sm{position:relative;height:230px}
+
+/* ── لیست دسته‌ها ── */
+.cat-list{list-style:none}
+.cat-item{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 0;border-bottom:1px solid var(--border);
+}
+.cat-item:last-child{border:none}
+.cat-em{font-size:19px;width:26px;text-align:center;flex-shrink:0}
+.cat-nm{flex:1;font-size:13px;color:var(--txt2)}
+.cat-bar-wrap{width:90px;height:5px;background:var(--border2);border-radius:3px;overflow:hidden}
+.cat-bar{height:100%;border-radius:3px;transition:width 1s}
+.cat-cnt{font-size:14px;font-weight:800;min-width:32px;text-align:left;flex-shrink:0}
+
+/* ── سلامت ── */
+.health-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));
+  gap:10px;margin-bottom:16px;
+}
+.h-card{
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:var(--r2);padding:12px;text-align:center;
+}
+.h-num{font-size:30px;font-weight:900;line-height:1;margin-bottom:3px}
+.h-lbl{font-size:11px;color:var(--txt3)}
+.h-bar{height:28px;background:var(--bg3);border-radius:8px;overflow:hidden;display:flex}
+.h-seg{height:100%;transition:width 1s}
+
+/* ── جدول ── */
+.tbl-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:18px;margin-bottom:18px;overflow-x:auto;
+}
+.tab-grp{
+  display:flex;gap:5px;background:var(--bg3);
+  border:1px solid var(--border);border-radius:var(--r2);padding:4px;
+}
+.tab{
+  padding:5px 12px;border:none;border-radius:7px;
+  background:transparent;color:var(--txt3);
+  cursor:pointer;font-size:12px;font-weight:700;transition:all .2s;
+}
+.tab.on{background:var(--green);color:#fff}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  text-align:right;padding:9px 12px;
+  color:var(--txt3);font-weight:700;
+  border-bottom:1px solid var(--border);white-space:nowrap;
+}
+tbody tr{transition:background .15s}
+tbody tr:hover{background:var(--card2)}
+tbody td{padding:9px 12px;border-bottom:1px solid var(--border);color:var(--txt2);vertical-align:middle}
+tbody tr:last-child td{border:none}
+
+.rank{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;border-radius:50%;font-size:11px;font-weight:800;
+}
+.r1{background:#fbbf24;color:#000}
+.r2{background:#94a3b8;color:#000}
+.r3{background:#c97c3a;color:#fff}
+.rn{background:var(--bg3);color:var(--txt3)}
+
+.mini-bar{
+  width:70px;height:5px;background:var(--border2);
+  border-radius:3px;overflow:hidden;display:inline-block;vertical-align:middle;margin-left:6px;
+}
+.mini-fill{height:100%;background:var(--blue);border-radius:3px}
+
+/* ══════════════════════════════════════════════════
+   بخش اخبار
+══════════════════════════════════════════════════ */
+.news-section{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--r);padding:18px;margin-bottom:18px;
+}
+.news-toolbar{
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:10px;margin-bottom:14px;
+}
+.news-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.news-count{
+  font-size:12px;background:var(--green-bg);color:var(--green);
+  border:1px solid var(--green);border-radius:20px;
+  padding:2px 10px;font-weight:700;
+}
+.news-search{
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:var(--r2);padding:7px 14px;
+  color:var(--txt);font-size:13px;width:230px;
+  outline:none;transition:border .2s;direction:rtl;
+}
+.news-search:focus{border-color:var(--green)}
+.news-search::placeholder{color:var(--txt3)}
+
+/* فیلتر دسته */
+.cat-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px}
+.ct{
+  display:flex;align-items:center;gap:5px;
+  padding:5px 12px;border:1px solid var(--border2);
+  border-radius:20px;background:transparent;
+  color:var(--txt3);cursor:pointer;font-size:12px;
+  font-weight:600;transition:all .2s;
+}
+.ct:hover{border-color:var(--green);color:var(--green)}
+.ct.on{border-color:var(--green);color:#fff;background:var(--green)}
+
+/* لیست خبر */
+.n-list{list-style:none}
+.n-item{
+  display:flex;align-items:flex-start;gap:12px;
+  padding:12px 6px;border-bottom:1px solid var(--border);
+  border-radius:8px;transition:background .15s;cursor:pointer;
+}
+.n-item:last-child{border:none}
+.n-item:hover{background:var(--card2);padding-right:10px}
+
+.n-cat{
+  font-size:22px;flex-shrink:0;
+  margin-top:1px;width:30px;text-align:center;
+}
+.n-body{flex:1;min-width:0}
+.n-title{
+  display:block;font-size:14px;font-weight:700;
+  color:var(--txt);text-decoration:none;
+  line-height:1.5;margin-bottom:5px;
+  transition:color .2s;
+}
+.n-title:hover{color:var(--green)}
+.n-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:11px}
+.n-src{
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:20px;padding:2px 9px;
+  color:var(--txt2);font-weight:600;
+}
+.n-date{color:var(--txt3)}
+.n-time{
+  background:var(--green-bg);color:var(--green);
+  border-radius:20px;padding:2px 8px;font-weight:700;
+}
+.n-urg{font-size:14px}
+.n-score{
+  font-size:10px;background:var(--bg3);
+  border-radius:20px;padding:1px 7px;color:var(--txt3);
+}
+.n-btn{
+  flex-shrink:0;width:34px;height:34px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:var(--r2);color:var(--txt3);
+  text-decoration:none;font-size:15px;
+  transition:all .2s;margin-top:1px;
+}
+.n-btn:hover{background:var(--green);border-color:var(--green);color:#fff}
+
+.n-empty{
+  text-align:center;padding:48px 0;
+  color:var(--txt3);font-size:14px;
+}
+.n-empty-ico{font-size:48px;display:block;margin-bottom:12px}
+
+/* صفحه‌بندی */
+.pager{
+  display:flex;align-items:center;justify-content:center;
+  gap:6px;margin-top:18px;flex-wrap:wrap;
+}
+.pg{
+  min-width:34px;height:34px;border:1px solid var(--border);
+  border-radius:var(--r2);background:var(--bg3);
+  color:var(--txt2);cursor:pointer;font-size:13px;
+  font-weight:700;display:flex;align-items:center;
+  justify-content:center;padding:0 6px;transition:all .2s;
+}
+.pg:hover{border-color:var(--green);color:var(--green)}
+.pg.on{background:var(--green);border-color:var(--green);color:#fff}
+.pg:disabled{opacity:.3;cursor:default}
+.pg-dots{color:var(--txt3);padding:0 2px}
+
+/* ── فوتر ── */
+.footer{
+  text-align:center;padding:20px;
+  color:var(--txt3);font-size:12px;
+  border-top:1px solid var(--border);
+}
+
+/* ── ریسپانسیو ── */
+@media(max-width:600px){
+  .hdr-in{height:auto;padding:10px 14px;flex-wrap:wrap}
+  .today-num{font-size:40px}
+  .stat-val{font-size:28px}
+  .news-search{width:100%}
+}
+</style>
 </head>
 <body>
 
-<!-- ── صفحه لودینگ ───────────────────────────────────────── -->
-<div id="loading-screen">
-  <div class="spinner"></div>
-  <div class="loading-text">در حال بارگذاری داده‌ها...</div>
+<!-- لودینگ -->
+<div id="splash">
+  <div class="spin"></div>
+  <div class="splash-txt">🌿 در حال بارگذاری داده‌ها...</div>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════
-     هدر
-══════════════════════════════════════════════════════════ -->
-<header class="header">
-  <div class="header-inner">
-    <div class="header-logo">
-      <span>🌿</span>
+<!-- هدر -->
+<header class="hdr">
+  <div class="hdr-in">
+    <div class="logo">
+      <div class="logo-icon">🌿</div>
       <div>
-        <div>داشبورد اخبار محیط زیست</div>
-        <div class="header-subtitle">سازمان حفاظت محیط زیست ایران</div>
+        <div class="logo-title">پایش اخبار محیط زیست</div>
+        <div class="logo-sub">سازمان حفاظت محیط زیست ایران</div>
       </div>
     </div>
-
-    <div class="header-actions">
-      <div class="live-badge">
+    <div class="hdr-actions">
+      <div class="live">
         <div class="live-dot"></div>
-        <span>به‌روز خودکار</span>
+        <span id="countdown">زنده</span>
       </div>
-
-      <button class="theme-btn" onclick="toggleTheme()" title="تغییر حالت">
-        <span id="theme-icon">☀️</span>
-      </button>
-
-      <button class="refresh-btn" onclick="loadData(true)" id="refresh-btn">
-        <svg id="refresh-icon" width="14" height="14" viewBox="0 0 24 24"
+      <button class="btn-icon" onclick="toggleTheme()" id="theme-btn">☀️</button>
+      <button class="btn-refresh" onclick="loadAll(true)" id="ref-btn">
+        <svg id="ref-ico" width="14" height="14" viewBox="0 0 24 24"
              fill="none" stroke="currentColor" stroke-width="2.5">
           <path d="M1 4v6h6M23 20v-6h-6"/>
           <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4-4.64 4.36A9 9 0 0 1 3.51 15"/>
@@ -676,791 +447,637 @@
   </div>
 </header>
 
-<!-- ══════════════════════════════════════════════════════════
-     بدنه
-══════════════════════════════════════════════════════════ -->
-<div class="container">
+<!-- محتوا -->
+<div class="wrap">
 
-  <!-- خطا -->
-  <div id="error-banner">
-    ⚠️ خطا در دریافت اطلاعات — لطفاً اتصال اینترنت را بررسی کنید یا چند دقیقه دیگر تلاش کنید.
+  <div class="err" id="err-box">⚠️ خطا در دریافت داده‌ها — لطفاً چند لحظه دیگر تلاش کنید.</div>
+
+  <!-- نوار اجرا -->
+  <div class="run-bar">
+    <div class="run-item">🕐 آخرین اجرا: <strong id="last-run">—</strong></div>
+    <div class="run-item">🔄 تعداد اجراها: <strong id="run-count">—</strong></div>
+    <div class="run-item">📡 منابع فعال: <strong id="src-active">—</strong></div>
+    <div class="run-item">⏱️ اجرای بعدی: <strong id="next-run">—</strong></div>
   </div>
 
-  <!-- نوار آخرین اجرا -->
-  <div class="run-banner" id="run-banner">
-    <div class="run-banner-item">
-      🕐 <span>آخرین اجرا:</span>
-      <strong id="last-run">—</strong>
-    </div>
-    <div class="run-banner-item">
-      🔄 <span>تعداد کل اجراها:</span>
-      <strong id="run-count">—</strong>
-    </div>
-    <div class="run-banner-item">
-      📡 <span>منابع فعال:</span>
-      <strong id="sources-active">—</strong>
-    </div>
-    <div class="run-banner-item">
-      ⏱️ <span>بعدی:</span>
-      <strong id="next-run">—</strong>
-    </div>
-  </div>
-
-  <!-- باکس بهترین دسته امروز -->
-  <div class="today-banner" id="today-banner">
+  <!-- کارت امروز -->
+  <div class="today-card">
     <div class="today-left">
-      <div class="today-emoji" id="top-cat-emoji">🌿</div>
+      <div class="today-emoji" id="top-em">🌿</div>
       <div>
-        <div class="today-label">📈 پربازدیدترین دسته امروز</div>
-        <div class="today-title" id="top-cat-label">در حال بارگذاری...</div>
+        <div class="today-tag">📈 پربازدیدترین دسته امروز</div>
+        <div class="today-title" id="top-lbl">در حال بارگذاری...</div>
       </div>
     </div>
     <div class="today-right">
-      <div class="today-count" id="today-sent">0</div>
-      <div class="today-sent-label">خبر امروز</div>
+      <div class="today-num" id="today-sent">۰</div>
+      <div class="today-lbl">خبر امروز</div>
     </div>
   </div>
 
-  <!-- ── کارت‌های عددی ─────────────────────────────────── -->
-  <div class="stats-grid">
-    <div class="stat-card green">
-      <span class="stat-icon">📤</span>
-      <div class="stat-value" id="s-total-sent">0</div>
-      <div class="stat-label">کل اخبار ارسال‌شده</div>
-      <span class="stat-sub">از ابتدای راه‌اندازی</span>
+  <!-- کارت‌های عددی -->
+  <div class="stat-grid">
+    <div class="stat g">
+      <div class="stat-ico">📤</div>
+      <div class="stat-val" id="s-sent">۰</div>
+      <div class="stat-lbl">کل اخبار ارسالی</div>
+      <span class="stat-sub">از ابتدا</span>
     </div>
-    <div class="stat-card blue">
-      <span class="stat-icon">📰</span>
-      <div class="stat-value" id="s-total-checked">0</div>
-      <div class="stat-label">کل اخبار بررسی‌شده</div>
-      <span class="stat-sub" id="s-filter-rate">نرخ فیلتر: —</span>
+    <div class="stat b">
+      <div class="stat-ico">📰</div>
+      <div class="stat-val" id="s-checked">۰</div>
+      <div class="stat-lbl">کل بررسی‌شده</div>
+      <span class="stat-sub" id="s-rate">نرخ: —</span>
     </div>
-    <div class="stat-card orange">
-      <span class="stat-icon">🚫</span>
-      <div class="stat-value" id="s-irrelevant">0</div>
-      <div class="stat-label">اخبار نامرتبط رد شده</div>
+    <div class="stat o">
+      <div class="stat-ico">🚫</div>
+      <div class="stat-val" id="s-irrel">۰</div>
+      <div class="stat-lbl">نامرتبط رد شده</div>
       <span class="stat-sub">فیلتر سه‌لایه</span>
     </div>
-    <div class="stat-card purple">
-      <span class="stat-icon">🔁</span>
-      <div class="stat-value" id="s-duplicate">0</div>
-      <div class="stat-label">اخبار تکراری</div>
+    <div class="stat p">
+      <div class="stat-ico">🔁</div>
+      <div class="stat-val" id="s-dup">۰</div>
+      <div class="stat-lbl">تکراری</div>
       <span class="stat-sub">هش + fuzzy</span>
     </div>
-    <div class="stat-card cyan">
-      <span class="stat-icon">📡</span>
-      <div class="stat-value" id="s-src-ok">0</div>
-      <div class="stat-label">منابع موفق</div>
-      <span class="stat-sub" id="s-src-fail-label">ناموفق: —</span>
+    <div class="stat c">
+      <div class="stat-ico">📡</div>
+      <div class="stat-val" id="s-src-ok">۰</div>
+      <div class="stat-lbl">منابع موفق</div>
+      <span class="stat-sub" id="s-src-fail">ناموفق: —</span>
     </div>
-    <div class="stat-card red">
-      <span class="stat-icon">🏃</span>
-      <div class="stat-value" id="s-run-count">0</div>
-      <div class="stat-label">تعداد کل اجراها</div>
-      <span class="stat-sub">هر ساعت یک‌بار</span>
-    </div>
-  </div>
-
-  <!-- ── آمار فیلتر ─────────────────────────────────────── -->
-  <div class="filter-stats">
-    <div class="filter-item">
-      <div class="filter-icon">✅</div>
-      <div class="filter-info">
-        <div class="fi-label">ارسال موفق</div>
-        <div class="fi-val" id="f-sent">0</div>
-      </div>
-      <div class="filter-pct pct-green" id="f-sent-pct">—</div>
-    </div>
-    <div class="filter-item">
-      <div class="filter-icon">🚫</div>
-      <div class="filter-info">
-        <div class="fi-label">سیاه‌لیست</div>
-        <div class="fi-val" id="f-blacklist">0</div>
-      </div>
-      <div class="filter-pct pct-red" id="f-blacklist-pct">—</div>
-    </div>
-    <div class="filter-item">
-      <div class="filter-icon">⚡</div>
-      <div class="filter-info">
-        <div class="fi-label">نامرتبط</div>
-        <div class="fi-val" id="f-irrelevant">0</div>
-      </div>
-      <div class="filter-pct pct-orange" id="f-irrelevant-pct">—</div>
-    </div>
-    <div class="filter-item">
-      <div class="filter-icon">🔁</div>
-      <div class="filter-info">
-        <div class="fi-label">تکراری</div>
-        <div class="fi-val" id="f-dup">0</div>
-      </div>
-      <div class="filter-pct pct-orange" id="f-dup-pct">—</div>
+    <div class="stat r">
+      <div class="stat-ico">🔄</div>
+      <div class="stat-val" id="s-runs">۰</div>
+      <div class="stat-lbl">تعداد اجراها</div>
+      <span class="stat-sub">هر ساعت</span>
     </div>
   </div>
 
-  <!-- ── نمودار دسته‌بندی + ساعتی ─────────────────────── -->
-  <div class="charts-row">
-
-    <!-- دونات دسته‌بندی -->
-    <div class="chart-card">
-      <div class="card-header">
-        <div class="card-title">🗂️ توزیع دسته‌بندی اخبار</div>
-        <span class="card-badge badge-green">کل دوره</span>
+  <!-- نمودار دسته + لیست -->
+  <div class="row2">
+    <div class="ch-card">
+      <div class="ch-hdr">
+        <div class="ch-title">🗂️ توزیع دسته‌بندی</div>
+        <span class="badge badge-g">کل دوره</span>
       </div>
-      <div class="chart-wrap">
-        <canvas id="chart-category"></canvas>
-      </div>
+      <div class="ch-wrap"><canvas id="ch-cat"></canvas></div>
     </div>
-
-    <!-- لیست دسته‌بندی -->
-    <div class="chart-card">
-      <div class="card-header">
-        <div class="card-title">📋 جزئیات دسته‌بندی</div>
-        <span class="card-badge badge-green">مرتب بر اساس تعداد</span>
+    <div class="ch-card">
+      <div class="ch-hdr">
+        <div class="ch-title">📋 جزئیات</div>
+        <span class="badge badge-g">مرتب بر تعداد</span>
       </div>
       <ul class="cat-list" id="cat-list"></ul>
     </div>
-
   </div>
 
-  <!-- ── نمودار گروه منابع + ساعتی ────────────────────── -->
-  <div class="charts-row-3">
-
-    <!-- ستونی ساعتی -->
-    <div class="chart-card">
-      <div class="card-header">
-        <div class="card-title">⏰ فعالیت ساعتی</div>
-        <span class="card-badge badge-blue">تعداد اخبار به تفکیک ساعت</span>
+  <!-- نمودار ساعتی + گروه‌ها -->
+  <div class="row3">
+    <div class="ch-card">
+      <div class="ch-hdr">
+        <div class="ch-title">⏰ فعالیت ساعتی</div>
+        <span class="badge badge-b">خبر به تفکیک ساعت</span>
       </div>
-      <div class="chart-wrap">
-        <canvas id="chart-hourly"></canvas>
-      </div>
+      <div class="ch-wrap"><canvas id="ch-hour"></canvas></div>
     </div>
-
-    <!-- دونات گروه منبع -->
-    <div class="chart-card">
-      <div class="card-header">
-        <div class="card-title">🌐 گروه منابع</div>
-        <span class="card-badge badge-orange">سهم هر گروه</span>
+    <div class="ch-card">
+      <div class="ch-hdr">
+        <div class="ch-title">🌐 گروه منابع</div>
+        <span class="badge badge-o">سهم هر گروه</span>
       </div>
-      <div class="chart-wrap-sm">
-        <canvas id="chart-groups"></canvas>
-      </div>
+      <div class="ch-sm"><canvas id="ch-grp"></canvas></div>
     </div>
-
   </div>
 
-  <!-- ── سلامت منابع ────────────────────────────────────── -->
-  <div class="chart-card" style="margin-bottom:24px;">
-    <div class="card-header">
-      <div class="card-title">🏥 سلامت منابع RSS</div>
-      <span class="card-badge badge-green" id="health-updated">در حال بارگذاری...</span>
+  <!-- سلامت -->
+  <div class="ch-card" style="margin-bottom:18px">
+    <div class="ch-hdr">
+      <div class="ch-title">🏥 سلامت منابع RSS</div>
+      <span class="badge badge-g" id="health-time">—</span>
     </div>
     <div class="health-grid">
-      <div class="health-card">
-        <div class="health-num h-green" id="h-healthy">—</div>
-        <div class="health-label">✅ سالم</div>
+      <div class="h-card">
+        <div class="h-num" style="color:var(--green)" id="h-ok">—</div>
+        <div class="h-lbl">✅ سالم</div>
       </div>
-      <div class="health-card">
-        <div class="health-num h-yellow" id="h-slow">—</div>
-        <div class="health-label">🐢 کند</div>
+      <div class="h-card">
+        <div class="h-num" style="color:var(--yellow)" id="h-slow">—</div>
+        <div class="h-lbl">🐢 کند</div>
       </div>
-      <div class="health-card">
-        <div class="health-num h-orange" id="h-failing">—</div>
-        <div class="health-label">⚠️ ناپایدار</div>
+      <div class="h-card">
+        <div class="h-num" style="color:var(--orange)" id="h-fail">—</div>
+        <div class="h-lbl">⚠️ ناپایدار</div>
       </div>
-      <div class="health-card">
-        <div class="health-num h-red" id="h-disabled">—</div>
-        <div class="health-label">🚫 غیرفعال خودکار</div>
+      <div class="h-card">
+        <div class="h-num" style="color:var(--red)" id="h-dis">—</div>
+        <div class="h-lbl">🚫 غیرفعال</div>
       </div>
-      <div class="health-card">
-        <div class="health-num h-gray" id="h-total">—</div>
-        <div class="health-label">📡 کل منابع</div>
+      <div class="h-card">
+        <div class="h-num" style="color:var(--txt3)" id="h-tot">—</div>
+        <div class="h-lbl">📡 کل</div>
       </div>
     </div>
-
-    <!-- نمودار افقی سلامت -->
-    <div style="height:30px; background:var(--bg-card2); border-radius:8px; overflow:hidden; display:flex;">
-      <div id="hbar-healthy" style="background:var(--accent); height:100%; transition:width 1s;"></div>
-      <div id="hbar-slow"    style="background:var(--yellow); height:100%; transition:width 1s;"></div>
-      <div id="hbar-failing" style="background:var(--orange); height:100%; transition:width 1s;"></div>
-      <div id="hbar-disabled"style="background:var(--red);   height:100%; transition:width 1s;"></div>
-    </div>
-    <div style="display:flex; gap:16px; margin-top:8px; font-size:11px; color:var(--text-muted);">
-      <span>🟢 سالم</span><span>🟡 کند</span><span>🟠 ناپایدار</span><span>🔴 غیرفعال</span>
+    <div class="h-bar" id="h-bar"></div>
+    <div style="display:flex;gap:14px;margin-top:7px;font-size:11px;color:var(--txt3)">
+      <span>🟢 سالم</span><span>🟡 کند</span>
+      <span>🟠 ناپایدار</span><span>🔴 غیرفعال</span>
     </div>
   </div>
 
-  <!-- ── جدول برترین منابع ─────────────────────────────── -->
-  <div class="table-card">
-    <div class="card-header">
-      <div class="card-title">🏆 برترین منابع خبری</div>
-      <div class="tab-group">
-        <button class="tab-btn active" onclick="showTopSources(10,this)">۱۰ تا</button>
-        <button class="tab-btn" onclick="showTopSources(20,this)">۲۰ تا</button>
-        <button class="tab-btn" onclick="showTopSources(999,this)">همه</button>
+  <!-- برترین منابع -->
+  <div class="tbl-card">
+    <div class="ch-hdr">
+      <div class="ch-title">🏆 برترین منابع</div>
+      <div class="tab-grp">
+        <button class="tab on" onclick="showSrc(10,this)">۱۰</button>
+        <button class="tab"    onclick="showSrc(20,this)">۲۰</button>
+        <button class="tab"    onclick="showSrc(999,this)">همه</button>
       </div>
     </div>
     <table>
       <thead>
-        <tr>
-          <th>#</th>
-          <th>نام منبع</th>
-          <th>تعداد اخبار</th>
-          <th>نمودار</th>
-        </tr>
+        <tr><th>#</th><th>منبع</th><th>تعداد</th><th>نمودار</th></tr>
       </thead>
-      <tbody id="sources-tbody"></tbody>
+      <tbody id="src-tbody"></tbody>
     </table>
   </div>
 
-  <!-- ── جدول گروه‌بندی منابع ──────────────────────────── -->
-  <div class="table-card">
-    <div class="card-header">
-      <div class="card-title">🌐 آمار گروه‌های منابع</div>
-      <span class="card-badge badge-blue">به تفکیک گروه</span>
+  <!-- جدول گروه‌ها -->
+  <div class="tbl-card">
+    <div class="ch-hdr">
+      <div class="ch-title">🌐 آمار گروه‌ها</div>
+      <span class="badge badge-b">به تفکیک گروه</span>
     </div>
     <table>
       <thead>
-        <tr>
-          <th>گروه</th>
-          <th>تعداد اخبار</th>
-          <th>سهم</th>
-          <th>نمودار</th>
-        </tr>
+        <tr><th>گروه</th><th>تعداد</th><th>سهم</th><th>نمودار</th></tr>
       </thead>
-      <tbody id="groups-tbody"></tbody>
+      <tbody id="grp-tbody"></tbody>
     </table>
   </div>
 
-</div><!-- /container -->
+  <!-- ══════════════════════════════════════════════
+       بخش اخبار
+  ══════════════════════════════════════════════ -->
+  <div class="news-section">
+    <div class="news-toolbar">
+      <div class="news-left">
+        <div class="ch-title">📋 آخرین اخبار</div>
+        <span class="news-count" id="news-badge">۰ خبر</span>
+      </div>
+      <input class="news-search" id="n-search"
+             placeholder="🔍 جستجو در عناوین..."
+             oninput="filterNews()"/>
+    </div>
 
-<!-- فوتر -->
+    <!-- فیلتر دسته -->
+    <div class="cat-tabs" id="cat-tabs">
+      <button class="ct on" data-cat="all" onclick="setCat('all',this)">
+        🌿 همه
+      </button>
+      <button class="ct" data-cat="جنگل"       onclick="setCat('جنگل',this)">🌳 جنگل</button>
+      <button class="ct" data-cat="حیات‌وحش"   onclick="setCat('حیات‌وحش',this)">🐾 حیات‌وحش</button>
+      <button class="ct" data-cat="آب"          onclick="setCat('آب',this)">💧 آب</button>
+      <button class="ct" data-cat="آلودگی"      onclick="setCat('آلودگی',this)">🏭 آلودگی</button>
+      <button class="ct" data-cat="مناطق"       onclick="setCat('مناطق',this)">🏔️ مناطق</button>
+      <button class="ct" data-cat="پسماند"      onclick="setCat('پسماند',this)">♻️ پسماند</button>
+      <button class="ct" data-cat="قوانین"      onclick="setCat('قوانین',this)">⚖️ قوانین</button>
+      <button class="ct" data-cat="اقلیم"       onclick="setCat('اقلیم',this)">🌡️ اقلیم</button>
+    </div>
+
+    <ul class="n-list" id="n-list"></ul>
+    <div class="pager" id="pager"></div>
+  </div>
+
+</div><!-- /wrap -->
+
 <div class="footer">
-  🌿 داشبورد اخبار محیط زیست — نسخه ۴
-  &nbsp;|&nbsp; به‌روزرسانی خودکار هر ۵ دقیقه
-  &nbsp;|&nbsp; <span id="footer-time"></span>
+  🌿 پایش اخبار محیط زیست — نسخه نهایی &nbsp;|&nbsp;
+  به‌روزرسانی خودکار هر ۵ دقیقه &nbsp;|&nbsp;
+  <span id="foot-time"></span>
 </div>
 
-<!-- ══════════════════════════════════════════════════════════
-     JavaScript
-══════════════════════════════════════════════════════════ -->
 <script>
 "use strict";
 
-/* ── تنظیمات ───────────────────────────────────────────────
-   آدرس raw فایل stats.json در مخزن GitHub شما
-   فقط USERNAME را با نام کاربری GitHub خود عوض کنید
-─────────────────────────────────────────────────────────── */
-const GITHUB_USER = "mehranfa2000";     // ← اینجا نام کاربری GitHub خود را بگذارید
-const GITHUB_REPO = "environmental-news-agent";
-const BRANCH      = "main";
-const STATS_URL   = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/${BRANCH}/data/stats.json`;
+/* ── تنظیمات ── */
+const GH_USER = "mehranfa2000";
+const GH_REPO = "environmental-news-agent";
+const BRANCH  = "main";
+const BASE    = `https://raw.githubusercontent.com/${GH_USER}/${GH_REPO}/${BRANCH}/data`;
+const STATS_URL = `${BASE}/stats.json`;
+const NEWS_URL  = `${BASE}/news.json`;
+const REFRESH_MS = 5*60*1000;
+const PER_PAGE   = 25;
 
-const AUTO_REFRESH_MS = 5 * 60 * 1000;   // هر ۵ دقیقه
+/* ── state ── */
+let stats       = null;
+let allNews     = [];
+let filtered    = [];
+let page        = 1;
+let curCat      = "all";
+let srcSorted   = [];
+let chCat=null, chHour=null, chGrp=null;
 
-/* ── داده‌های جهانی ──────────────────────────────────────── */
-let statsData         = null;
-let allSourcesSorted  = [];
-let chartCategory     = null;
-let chartHourly       = null;
-let chartGroups       = null;
-
-/* ── نام‌های فارسی دسته‌بندی ──────────────────────────────── */
-const CAT_META = {
-  "جنگل":            { emoji:"🌳", label:"جنگل‌ها/مراتع/بیابان‌زدایی", color:"#22c55e"  },
-  "حیات‌وحش":        { emoji:"🐾", label:"حیات‌وحش/تنوع زیستی",        color:"#f97316"  },
-  "آب":              { emoji:"💧", label:"منابع آبی/تالاب‌ها",          color:"#3b82f6"  },
-  "آلودگی":          { emoji:"🏭", label:"آلودگی محیط زیست",           color:"#64748b"  },
-  "مناطق_حفاظت‌شده":{ emoji:"🏔️", label:"مناطق حفاظت‌شده",           color:"#8b5cf6"  },
-  "پسماند":          { emoji:"♻️", label:"پسماند/بازیافت",             color:"#06b6d4"  },
-  "قوانین":          { emoji:"⚖️", label:"قوانین/سیاست‌ها",           color:"#eab308"  },
-  "اقلیم":           { emoji:"🌡️", label:"تغییر اقلیم/انرژی پاک",     color:"#ef4444"  },
+/* ── meta دسته‌ها ── */
+const CATS = {
+  "جنگل":      {emoji:"🌳",label:"جنگل و مراتع",    color:"#22c55e"},
+  "حیات‌وحش":  {emoji:"🐾",label:"حیات‌وحش",        color:"#f97316"},
+  "آب":         {emoji:"💧",label:"منابع آبی",        color:"#3b82f6"},
+  "آلودگی":    {emoji:"🏭",label:"آلودگی",           color:"#94a3b8"},
+  "مناطق":     {emoji:"🏔️",label:"مناطق حفاظت‌شده", color:"#8b5cf6"},
+  "پسماند":    {emoji:"♻️",label:"پسماند و بازیافت", color:"#06b6d4"},
+  "قوانین":    {emoji:"⚖️",label:"قوانین و سیاست‌ها",color:"#eab308"},
+  "اقلیم":     {emoji:"🌡️",label:"اقلیم و انرژی",   color:"#ef4444"},
+};
+const GROUPS = {
+  "رسمی":  "🏛️ رسمی",
+  "تخصصی": "🌿 تخصصی",
+  "عمومی": "📰 عمومی",
 };
 
-const GROUP_FA = {
-  "ایرانی_رسمی":           "🇮🇷 ایرانی — رسمی",
-  "ایرانی_تخصصی":          "🇮🇷 ایرانی — تخصصی",
-  "ایرانی_عمومی":          "🇮🇷 ایرانی — عمومی",
-  "بین‌المللی_رسانه":      "🌍 بین‌المللی — رسانه",
-  "بین‌المللی_تخصصی":     "🌿 بین‌المللی — تخصصی",
-  "سازمان‌بین‌المللی":    "🏛️ سازمان‌های بین‌المللی",
-  "منطقه‌ای_عربی_آسیایی": "🌏 عربی / آسیایی",
-  "نشریه_علمی":            "🔬 نشریات علمی",
-};
-
-/* ══════════════════════════════════════════════════════════
-   بارگذاری داده
-══════════════════════════════════════════════════════════ */
-async function loadData(manual = false) {
-  if (manual) {
-    const btn = document.getElementById("refresh-btn");
-    btn.classList.add("spinning");
+/* ══════════════════════════════════════════════
+   بارگذاری
+══════════════════════════════════════════════ */
+async function loadAll(manual=false) {
+  if(manual){
+    document.getElementById("ref-btn").classList.add("spin");
   }
+  try{
+    const [sRes,nRes] = await Promise.all([
+      fetch(`${STATS_URL}?t=${Date.now()}`),
+      fetch(`${NEWS_URL}?t=${Date.now()}`),
+    ]);
+    if(!sRes.ok||!nRes.ok) throw new Error("fetch fail");
+    stats   = await sRes.json();
+    allNews = (await nRes.json()).reverse();
 
-  try {
-    const cacheBust = Date.now();
-    const resp = await fetch(`${STATS_URL}?t=${cacheBust}`);
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-    statsData = await resp.json();
+    document.getElementById("err-box").style.display="none";
+    document.getElementById("splash").style.display="none";
 
-    document.getElementById("error-banner").style.display = "none";
-    document.getElementById("loading-screen").style.display = "none";
-
-    renderAll();
-
-  } catch (err) {
-    console.error("خطا:", err);
-    document.getElementById("error-banner").style.display = "block";
-    document.getElementById("loading-screen").style.display = "none";
+    renderStats();
+    renderToday();
+    renderCards();
+    renderCatChart();
+    renderCatList();
+    renderHourChart();
+    renderGrpChart();
+    renderHealth();
+    renderSrcTable(10);
+    renderGrpTable();
+    filterNews();
+  } catch(e){
+    console.error(e);
+    document.getElementById("err-box").style.display="block";
+    document.getElementById("splash").style.display="none";
   }
-
-  if (manual) {
-    const btn = document.getElementById("refresh-btn");
-    btn.classList.remove("spinning");
+  if(manual){
+    document.getElementById("ref-btn").classList.remove("spin");
   }
-
-  updateFooterTime();
+  document.getElementById("foot-time").textContent =
+    "بارگذاری: "+new Date().toLocaleTimeString("fa-IR");
 }
 
-/* ══════════════════════════════════════════════════════════
-   رندر کل داشبورد
-══════════════════════════════════════════════════════════ */
-function renderAll() {
-  renderBanner();
-  renderTodayBanner();
-  renderStatCards();
-  renderFilterStats();
-  renderCategoryChart();
-  renderCategoryList();
-  renderHourlyChart();
-  renderGroupChart();
-  renderHealth();
-  renderTopSources(10);
-  renderGroupTable();
+/* ── آمار نوار بالا ── */
+function renderStats(){
+  const d=stats;
+  q("last-run").textContent  = d.last_run||"—";
+  q("run-count").textContent = fa(d.run_count);
+  q("s-runs").textContent    = fa(d.run_count);
+  const h=d.health||{};
+  q("src-active").textContent= fa((h.healthy||0)+(h.slow||0));
+  const now=new Date(), next=new Date(now);
+  next.setHours(now.getHours()+1,0,0,0);
+  q("next-run").textContent  = fa(Math.round((next-now)/60000))+" دقیقه";
+  q("health-time").textContent= "آخرین اجرا: "+(d.last_run||"—");
 }
 
-/* ── نوار بالا ──────────────────────────────────────────── */
-function renderBanner() {
-  const d = statsData;
-  document.getElementById("last-run").textContent   = d.last_run || "—";
-  document.getElementById("run-count").textContent  = fmt(d.run_count);
-  document.getElementById("s-run-count").textContent= fmt(d.run_count);
-
-  const hSum = d.health_summary || {};
-  const active = (hSum.healthy || 0) + (hSum.slow || 0);
-  document.getElementById("sources-active").textContent = active || "—";
-
-  // بعدی اجرا
-  const now = new Date();
-  const next = new Date(now);
-  next.setHours(now.getHours() + 1, 0, 0, 0);
-  const diff = Math.round((next - now) / 60000);
-  document.getElementById("next-run").textContent = `${diff} دقیقه دیگر`;
+/* ── کارت امروز ── */
+function renderToday(){
+  const t=stats.today||{};
+  q("today-sent").textContent=fa(t.sent||0);
+  const top=stats.daily_top||{};
+  q("top-em").textContent  = top.emoji||"🌿";
+  q("top-lbl").textContent = top.label||"هنوز خبری نشده";
 }
 
-/* ── باکس امروز ─────────────────────────────────────────── */
-function renderTodayBanner() {
-  const today = statsData.today || {};
-  document.getElementById("today-sent").textContent = fmt(today.sent || 0);
+/* ── کارت‌های عددی ── */
+function renderCards(){
+  const d=stats;
+  q("s-sent").textContent   = fa(d.total_sent||0);
+  q("s-checked").textContent= fa(d.total_checked||0);
+  q("s-irrel").textContent  = fa(d.filtered_irrelevant||0);
+  q("s-dup").textContent    = fa(d.filtered_duplicate||0);
+  q("s-src-ok").textContent = fa(d.total_sources_ok||0);
+  q("s-rate").textContent   = "نرخ: "+pct(d.total_sent,d.total_checked);
+  q("s-src-fail").textContent="ناموفق: "+fa(d.total_sources_fail||0);
+}
 
-  const topCat = statsData.daily_top_category || {};
-  if (topCat.emoji && topCat.label) {
-    document.getElementById("top-cat-emoji").textContent = topCat.emoji;
-    document.getElementById("top-cat-label").textContent = topCat.label;
-  } else {
-    document.getElementById("top-cat-label").textContent = "هنوز خبری ارسال نشده";
+/* ── نمودار دایره‌ای دسته ── */
+function renderCatChart(){
+  const bc=stats.by_category||{};
+  const labels=[],data=[],colors=[];
+  for(const[k,m] of Object.entries(CATS)){
+    const v=bc[k]||0;
+    if(v>0){labels.push(m.label);data.push(v);colors.push(m.color)}
   }
-}
-
-/* ── کارت‌های عددی ─────────────────────────────────────── */
-function renderStatCards() {
-  const d = statsData;
-  document.getElementById("s-total-sent").textContent    = fmt(d.total_sent || 0);
-  document.getElementById("s-total-checked").textContent = fmt(d.total_checked || 0);
-  document.getElementById("s-irrelevant").textContent    = fmt(d.filtered_irrelevant || 0);
-  document.getElementById("s-duplicate").textContent     = fmt(d.filtered_duplicate || 0);
-  document.getElementById("s-src-ok").textContent        = fmt(d.total_sources_checked || 0);
-
-  const filterRate = d.total_checked
-    ? pct(d.total_sent, d.total_checked)
-    : "—";
-  document.getElementById("s-filter-rate").textContent = `نرخ انتشار: ${filterRate}`;
-
-  const failLabel = `ناموفق: ${fmt(d.total_sources_failed || 0)}`;
-  document.getElementById("s-src-fail-label").textContent = failLabel;
-}
-
-/* ── آمار فیلتر ─────────────────────────────────────────── */
-function renderFilterStats() {
-  const d   = statsData;
-  const tot = d.total_checked || 1;
-
-  document.getElementById("f-sent").textContent          = fmt(d.total_sent || 0);
-  document.getElementById("f-sent-pct").textContent      = pct(d.total_sent, tot);
-  document.getElementById("f-blacklist").textContent     = fmt(d.filtered_blacklist || 0);
-  document.getElementById("f-blacklist-pct").textContent = pct(d.filtered_blacklist, tot);
-  document.getElementById("f-irrelevant").textContent    = fmt(d.filtered_irrelevant || 0);
-  document.getElementById("f-irrelevant-pct").textContent= pct(d.filtered_irrelevant, tot);
-  document.getElementById("f-dup").textContent           = fmt(d.filtered_duplicate || 0);
-  document.getElementById("f-dup-pct").textContent       = pct(d.filtered_duplicate, tot);
-}
-
-/* ── نمودار دایره‌ای دسته‌بندی ──────────────────────────── */
-function renderCategoryChart() {
-  const byCat = statsData.by_category || {};
-  const labels = [], data = [], colors = [], emojis = [];
-
-  for (const [key, meta] of Object.entries(CAT_META)) {
-    const val = byCat[key] || 0;
-    if (val > 0) {
-      labels.push(meta.label);
-      emojis.push(meta.emoji);
-      data.push(val);
-      colors.push(meta.color);
-    }
-  }
-
-  const ctx = document.getElementById("chart-category").getContext("2d");
-
-  if (chartCategory) chartCategory.destroy();
-  chartCategory = new Chart(ctx, {
-    type: "doughnut",
-    data: { labels, datasets: [{ data, backgroundColor: colors,
-            borderColor: getComputedStyle(document.documentElement)
-              .getPropertyValue("--bg-card").trim(),
-            borderWidth: 3, hoverOffset: 8 }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      cutout: "60%",
-      plugins: {
-        legend: {
-          position: "bottom",
-          labels: {
-            color: getComputedStyle(document.documentElement)
-              .getPropertyValue("--text-secondary").trim(),
-            font: { size: 11 }, padding: 12,
-            generateLabels: (chart) =>
-              chart.data.labels.map((label, i) => ({
-                text: `${emojis[i]} ${label}`,
-                fillStyle: chart.data.datasets[0].backgroundColor[i],
-                strokeStyle: "transparent",
-                index: i,
-              })),
-          }
-        },
-        tooltip: {
-          callbacks: {
-            label: (ctx) => ` ${ctx.label}: ${fmt(ctx.parsed)} خبر`
-          }
-        }
+  const ctx=document.getElementById("ch-cat").getContext("2d");
+  if(chCat) chCat.destroy();
+  chCat=new Chart(ctx,{
+    type:"doughnut",
+    data:{labels,datasets:[{data,backgroundColor:colors,
+      borderColor:cssVar("--card"),borderWidth:3,hoverOffset:8}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:"62%",
+      plugins:{
+        legend:{position:"bottom",labels:{
+          color:cssVar("--txt2"),font:{size:11},padding:10,
+        }},
+        tooltip:{callbacks:{label:c=>` ${c.label}: ${fa(c.parsed)} خبر`}}
       }
     }
   });
 }
 
-/* ── لیست دسته‌بندی ─────────────────────────────────────── */
-function renderCategoryList() {
-  const byCat  = statsData.by_category || {};
-  const maxVal = Math.max(...Object.values(byCat), 1);
-  const list   = document.getElementById("cat-list");
-  list.innerHTML = "";
-
-  const sorted = Object.entries(CAT_META)
-    .map(([key, meta]) => ({ key, ...meta, count: byCat[key] || 0 }))
-    .sort((a, b) => b.count - a.count);
-
-  for (const item of sorted) {
-    const li = document.createElement("li");
-    li.className = "cat-item";
-    const barW = item.count ? Math.round(item.count / maxVal * 100) : 0;
-    li.innerHTML = `
-      <span class="cat-emoji">${item.emoji}</span>
-      <span class="cat-name">${item.label}</span>
+/* ── لیست دسته ── */
+function renderCatList(){
+  const bc=stats.by_category||{};
+  const mx=Math.max(...Object.values(bc),1);
+  const list=document.getElementById("cat-list");
+  const sorted=Object.entries(CATS)
+    .map(([k,m])=>({k,...m,cnt:bc[k]||0}))
+    .sort((a,b)=>b.cnt-a.cnt);
+  list.innerHTML=sorted.map(it=>`
+    <li class="cat-item">
+      <span class="cat-em">${it.emoji}</span>
+      <span class="cat-nm">${it.label}</span>
       <div class="cat-bar-wrap">
-        <div class="cat-bar" style="width:${barW}%; background:${item.color};"></div>
+        <div class="cat-bar" style="width:${it.cnt?Math.round(it.cnt/mx*100):0}%;background:${it.color}"></div>
       </div>
-      <span class="cat-count">${fmt(item.count)}</span>
-    `;
-    list.appendChild(li);
-  }
+      <span class="cat-cnt" style="color:${it.color}">${fa(it.cnt)}</span>
+    </li>`).join("");
 }
 
-/* ── نمودار ستونی ساعتی ─────────────────────────────────── */
-function renderHourlyChart() {
-  const hourly = statsData.hourly_activity || {};
-  const labels = [], data = [], colors = [];
-
-  for (let h = 0; h < 24; h++) {
-    const label = `${String(h).padStart(2,"0")}:00`;
-    labels.push(label);
-    const val = hourly[String(h)] || 0;
-    data.push(val);
-    // ساعت‌های کاری روشن‌تر
-    colors.push(h >= 7 && h <= 22 ? "#22c55e" : "#16a34a55");
+/* ── نمودار ساعتی ── */
+function renderHourChart(){
+  const h=stats.hourly||{};
+  const labels=[],data=[],colors=[];
+  for(let i=0;i<24;i++){
+    labels.push(String(i).padStart(2,"0"));
+    const v=h[String(i)]||0;
+    data.push(v);
+    colors.push(i>=7&&i<=22?"#22c55e":"rgba(34,197,94,.3)");
   }
-
-  const ctx = document.getElementById("chart-hourly").getContext("2d");
-  const textColor = getComputedStyle(document.documentElement)
-    .getPropertyValue("--text-secondary").trim();
-  const borderColor = getComputedStyle(document.documentElement)
-    .getPropertyValue("--border").trim();
-
-  if (chartHourly) chartHourly.destroy();
-  chartHourly = new Chart(ctx, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: "تعداد اخبار",
-        data,
-        backgroundColor: colors,
-        borderRadius: 6,
-        borderSkipped: false,
-      }]
-    },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: { label: (c) => ` ${c.parsed.y} خبر` }
-        }
-      },
-      scales: {
-        x: {
-          ticks: { color: textColor, font: { size: 10 }, maxRotation: 0 },
-          grid:  { color: borderColor, drawBorder: false }
-        },
-        y: {
-          ticks: { color: textColor, font: { size: 11 }, stepSize: 1 },
-          grid:  { color: borderColor, drawBorder: false },
-          beginAtZero: true,
-        }
+  const ctx=document.getElementById("ch-hour").getContext("2d");
+  if(chHour) chHour.destroy();
+  chHour=new Chart(ctx,{
+    type:"bar",
+    data:{labels,datasets:[{label:"خبر",data,backgroundColor:colors,borderRadius:5,borderSkipped:false}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:c=>` ${c.parsed.y} خبر`}}},
+      scales:{
+        x:{ticks:{color:cssVar("--txt3"),font:{size:9},maxRotation:0},grid:{color:cssVar("--border")}},
+        y:{ticks:{color:cssVar("--txt3"),font:{size:11},stepSize:1},
+           grid:{color:cssVar("--border")},beginAtZero:true}
       }
     }
   });
 }
 
-/* ── نمودار دایره‌ای گروه‌ها ─────────────────────────────── */
-function renderGroupChart() {
-  const byGroup = statsData.by_source_group || {};
-  const labels = [], data = [], colors = [];
-  const palette = ["#22c55e","#3b82f6","#f97316","#a855f7",
-                   "#06b6d4","#eab308","#ef4444","#64748b"];
-  let ci = 0;
-
-  for (const [key, val] of Object.entries(byGroup)) {
-    if (val > 0) {
-      labels.push(GROUP_FA[key] || key);
-      data.push(val);
-      colors.push(palette[ci++ % palette.length]);
-    }
+/* ── نمودار گروه ── */
+function renderGrpChart(){
+  const bg=stats.by_group||{};
+  const labels=[],data=[],colors=[];
+  const pal=["#22c55e","#3b82f6","#f97316","#a855f7","#06b6d4","#eab308"];
+  let ci=0;
+  for(const[k,v] of Object.entries(bg)){
+    if(v>0){labels.push(GROUPS[k]||k);data.push(v);colors.push(pal[ci++%pal.length])}
   }
-
-  const ctx = document.getElementById("chart-groups").getContext("2d");
-  if (chartGroups) chartGroups.destroy();
-  chartGroups = new Chart(ctx, {
-    type: "doughnut",
-    data: { labels, datasets: [{ data, backgroundColor: colors,
-            borderColor: getComputedStyle(document.documentElement)
-              .getPropertyValue("--bg-card").trim(),
-            borderWidth: 2, hoverOffset: 6 }] },
-    options: {
-      responsive: true, maintainAspectRatio: false,
-      cutout: "55%",
-      plugins: {
-        legend: {
-          position: "bottom",
-          labels: {
-            color: getComputedStyle(document.documentElement)
-              .getPropertyValue("--text-secondary").trim(),
-            font: { size: 10 }, padding: 8,
-          }
-        },
-        tooltip: {
-          callbacks: { label: (c) => ` ${c.label}: ${fmt(c.parsed)} خبر` }
-        }
+  const ctx=document.getElementById("ch-grp").getContext("2d");
+  if(chGrp) chGrp.destroy();
+  chGrp=new Chart(ctx,{
+    type:"doughnut",
+    data:{labels,datasets:[{data,backgroundColor:colors,
+      borderColor:cssVar("--card"),borderWidth:2,hoverOffset:5}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:"55%",
+      plugins:{
+        legend:{position:"bottom",labels:{color:cssVar("--txt2"),font:{size:10},padding:8}},
+        tooltip:{callbacks:{label:c=>` ${c.label}: ${fa(c.parsed)} خبر`}}
       }
     }
   });
 }
 
-/* ── سلامت منابع ─────────────────────────────────────────── */
-function renderHealth() {
-  const h = statsData.health_summary || {};
-  const total    = h.total    || 0;
-  const healthy  = h.healthy  || 0;
-  const slow     = h.slow     || 0;
-  const failing  = h.failing  || 0;
-  const disabled = h.disabled || 0;
-
-  document.getElementById("h-healthy").textContent  = fmt(healthy);
-  document.getElementById("h-slow").textContent     = fmt(slow);
-  document.getElementById("h-failing").textContent  = fmt(failing);
-  document.getElementById("h-disabled").textContent = fmt(disabled);
-  document.getElementById("h-total").textContent    = fmt(total);
-  document.getElementById("health-updated").textContent =
-    `آخرین به‌روزرسانی: ${statsData.last_run || "—"}`;
-
-  if (total > 0) {
-    const p = (n) => `${(n / total * 100).toFixed(0)}%`;
-    document.getElementById("hbar-healthy").style.width  = p(healthy);
-    document.getElementById("hbar-slow").style.width     = p(slow);
-    document.getElementById("hbar-failing").style.width  = p(failing);
-    document.getElementById("hbar-disabled").style.width = p(disabled);
+/* ── سلامت ── */
+function renderHealth(){
+  const h=stats.health||{};
+  const tot=h.total||0;
+  q("h-ok").textContent   = fa(h.healthy||0);
+  q("h-slow").textContent = fa(h.slow||0);
+  q("h-fail").textContent = fa(h.failing||0);
+  q("h-dis").textContent  = fa(h.disabled||0);
+  q("h-tot").textContent  = fa(tot);
+  if(tot>0){
+    const p=n=>`${(n/tot*100).toFixed(0)}%`;
+    document.getElementById("h-bar").innerHTML=`
+      <div class="h-seg" style="width:${p(h.healthy||0)};background:var(--green)"></div>
+      <div class="h-seg" style="width:${p(h.slow||0)};background:var(--yellow)"></div>
+      <div class="h-seg" style="width:${p(h.failing||0)};background:var(--orange)"></div>
+      <div class="h-seg" style="width:${p(h.disabled||0)};background:var(--red)"></div>
+    `;
   }
 }
 
-/* ── جدول برترین منابع ───────────────────────────────────── */
-function renderTopSources(limit) {
-  const bySource = statsData.by_source || {};
-  allSourcesSorted = Object.entries(bySource)
-    .sort((a, b) => b[1] - a[1]);
-
-  showTopSources(limit, null);
+/* ── جدول منابع ── */
+function renderSrcTable(limit){
+  const bs=stats.by_source||{};
+  srcSorted=Object.entries(bs).sort((a,b)=>b[1]-a[1]);
+  showSrc(limit,null);
 }
 
-function showTopSources(limit, btn) {
-  if (btn) {
-    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-    btn.classList.add("active");
+function showSrc(limit,btn){
+  if(btn){
+    document.querySelectorAll(".tab").forEach(b=>b.classList.remove("on"));
+    btn.classList.add("on");
+  }
+  const rows=srcSorted.slice(0,limit);
+  const mx=rows.length?rows[0][1]:1;
+  document.getElementById("src-tbody").innerHTML=
+    rows.map(([name,cnt],i)=>{
+      const r=i+1;
+      const cls=r<=3?`r${r}`:"rn";
+      const bw=Math.round(cnt/mx*100);
+      return `<tr>
+        <td><span class="rank ${cls}">${r}</span></td>
+        <td style="font-weight:700;color:var(--txt)">${name}</td>
+        <td style="font-weight:800;color:var(--txt)">${fa(cnt)}</td>
+        <td>
+          <div class="mini-bar"><div class="mini-fill" style="width:${bw}%"></div></div>
+          <span style="font-size:11px;color:var(--txt3)">${bw}%</span>
+        </td>
+      </tr>`;
+    }).join("");
+}
+
+/* ── جدول گروه ── */
+function renderGrpTable(){
+  const bg=stats.by_group||{};
+  const tot=Object.values(bg).reduce((a,b)=>a+b,0)||1;
+  const rows=Object.entries(bg).sort((a,b)=>b[1]-a[1]);
+  const mx=rows.length?rows[0][1]:1;
+  document.getElementById("grp-tbody").innerHTML=
+    rows.map(([k,cnt])=>`<tr>
+      <td style="font-weight:700;color:var(--txt)">${GROUPS[k]||k}</td>
+      <td style="font-weight:800;color:var(--txt)">${fa(cnt)}</td>
+      <td><span class="badge badge-g">${pct(cnt,tot)}</span></td>
+      <td>
+        <div class="mini-bar" style="width:110px">
+          <div class="mini-fill" style="width:${Math.round(cnt/mx*100)}%;background:var(--green)"></div>
+        </div>
+      </td>
+    </tr>`).join("");
+}
+
+/* ══════════════════════════════════════════════
+   بخش اخبار
+══════════════════════════════════════════════ */
+function setCat(cat,btn){
+  curCat=cat; page=1;
+  document.querySelectorAll(".ct").forEach(b=>b.classList.remove("on"));
+  btn.classList.add("on");
+  filterNews();
+}
+
+function filterNews(){
+  const sq=(document.getElementById("n-search")?.value||"").trim().toLowerCase();
+  filtered=allNews.filter(item=>{
+    const catOk = curCat==="all" || item.cat_key===curCat;
+    const txtOk = !sq || item.title.toLowerCase().includes(sq) ||
+                  item.source.toLowerCase().includes(sq);
+    return catOk && txtOk;
+  });
+  page=1; renderNews();
+}
+
+function renderNews(){
+  const list = document.getElementById("n-list");
+  const badge= document.getElementById("news-badge");
+  const pager= document.getElementById("pager");
+  if(!list) return;
+
+  const tot   = filtered.length;
+  const pages = Math.ceil(tot/PER_PAGE)||1;
+  const start = (page-1)*PER_PAGE;
+  const items = filtered.slice(start,start+PER_PAGE);
+
+  badge.textContent = `${fa(tot)} خبر`;
+
+  if(!items.length){
+    list.innerHTML=`<div class="n-empty">
+      <span class="n-empty-ico">📭</span>
+      هنوز خبری منتشر نشده یا نتیجه‌ای یافت نشد
+    </div>`;
+    pager.innerHTML=""; return;
   }
 
-  const sources = allSourcesSorted.slice(0, limit);
-  const maxVal  = sources.length ? sources[0][1] : 1;
-  const tbody   = document.getElementById("sources-tbody");
-  tbody.innerHTML = "";
-
-  sources.forEach(([name, count], i) => {
-    const rank    = i + 1;
-    const rankClass = rank <= 3 ? `rank-${rank}` : "rank-n";
-    const barW    = Math.round(count / maxVal * 100);
-
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td><span class="rank-badge ${rankClass}">${rank}</span></td>
-      <td style="color:var(--text-primary);font-weight:600;">${name}</td>
-      <td style="color:var(--text-primary);font-weight:700;">${fmt(count)}</td>
-      <td>
-        <div class="source-bar-wrap">
-          <div class="source-bar" style="width:${barW}%;"></div>
+  list.innerHTML=items.map(item=>`
+    <li class="n-item" onclick="window.open('${item.link}','_blank')">
+      <div class="n-cat" title="${item.cat_label||''}"
+           style="color:${item.cat_color||'var(--green)'}">
+        ${item.cat_emoji||"🌿"}
+      </div>
+      <div class="n-body">
+        <a class="n-title" href="${item.link}" target="_blank"
+           rel="noopener noreferrer" onclick="event.stopPropagation()">
+          ${item.urgency?`<span class="n-urg">${item.urgency}</span> `:""}${item.title}
+        </a>
+        <div class="n-meta">
+          <span class="n-src">📌 ${item.source}</span>
+          <span class="n-date">📅 ${item.date}</span>
+          <span class="n-time">🕐 ${item.time}</span>
+          ${item.score?`<span class="n-score">امتیاز: ${item.score}</span>`:""}
         </div>
-        <span style="font-size:11px;color:var(--text-muted);">${barW}%</span>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
+      </div>
+      <a class="n-btn" href="${item.link}" target="_blank"
+         rel="noopener noreferrer" title="باز کردن خبر"
+         onclick="event.stopPropagation()">↗</a>
+    </li>
+  `).join("");
+
+  renderPager(pages);
 }
 
-/* ── جدول گروه‌ها ────────────────────────────────────────── */
-function renderGroupTable() {
-  const byGroup = statsData.by_source_group || {};
-  const total   = Object.values(byGroup).reduce((a, b) => a + b, 0) || 1;
-  const sorted  = Object.entries(byGroup).sort((a, b) => b[1] - a[1]);
-  const maxVal  = sorted.length ? sorted[0][1] : 1;
-  const tbody   = document.getElementById("groups-tbody");
-  tbody.innerHTML = "";
-
-  sorted.forEach(([key, count]) => {
-    const barW = Math.round(count / maxVal * 100);
-    const share = `${(count / total * 100).toFixed(1)}%`;
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td style="font-weight:600;color:var(--text-primary);">${GROUP_FA[key] || key}</td>
-      <td style="font-weight:700;color:var(--text-primary);">${fmt(count)}</td>
-      <td>
-        <span style="background:var(--accent-glow);color:var(--accent);
-              padding:2px 8px;border-radius:20px;font-size:12px;font-weight:600;">
-          ${share}
-        </span>
-      </td>
-      <td>
-        <div class="source-bar-wrap" style="width:120px;">
-          <div class="source-bar" style="width:${barW}%;background:var(--accent);"></div>
-        </div>
-      </td>
-    `;
-    tbody.appendChild(tr);
-  });
+function renderPager(pages){
+  const pager=document.getElementById("pager");
+  if(pages<=1){pager.innerHTML="";return}
+  let h=`<button class="pg" onclick="goPage(${page-1})"
+    ${page===1?"disabled":""}>‹</button>`;
+  for(let p=1;p<=pages;p++){
+    if(p===1||p===pages||(p>=page-2&&p<=page+2)){
+      h+=`<button class="pg ${p===page?"on":""}"
+        onclick="goPage(${p})">${fa(p)}</button>`;
+    } else if(p===page-3||p===page+3){
+      h+=`<span class="pg-dots">…</span>`;
+    }
+  }
+  h+=`<button class="pg" onclick="goPage(${page+1})"
+    ${page===pages?"disabled":""}>›</button>`;
+  pager.innerHTML=h;
 }
 
-/* ══════════════════════════════════════════════════════════
+function goPage(p){
+  const pages=Math.ceil(filtered.length/PER_PAGE)||1;
+  if(p<1||p>pages) return;
+  page=p; renderNews();
+  document.getElementById("n-list")
+    ?.scrollIntoView({behavior:"smooth",block:"start"});
+}
+
+/* ══════════════════════════════════════════════
    ابزارها
-══════════════════════════════════════════════════════════ */
-function fmt(n) {
-  return (n || 0).toLocaleString("fa-IR");
+══════════════════════════════════════════════ */
+const q = id => document.getElementById(id);
+const fa= n  => (n||0).toLocaleString("fa-IR");
+const pct=(n,t)=> t?`${((n||0)/t*100).toFixed(1)}٪`:"—";
+const cssVar=v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+function toggleTheme(){
+  const html=document.documentElement;
+  const dark=html.getAttribute("data-theme")==="dark";
+  html.setAttribute("data-theme",dark?"light":"dark");
+  document.getElementById("theme-btn").textContent=dark?"🌙":"☀️";
+  localStorage.setItem("theme",dark?"light":"dark");
+  if(stats){renderCatChart();renderHourChart();renderGrpChart()}
 }
 
-function pct(n, total) {
-  if (!total) return "—";
-  return `${((n || 0) / total * 100).toFixed(1)}٪`;
+/* شمارنده معکوس */
+function startCountdown(){
+  let rem=REFRESH_MS/1000;
+  const el=document.getElementById("countdown");
+  setInterval(()=>{
+    rem--; if(rem<=0) rem=REFRESH_MS/1000;
+    const m=Math.floor(rem/60), s=rem%60;
+    if(el) el.textContent=m>0?`${fa(m)}:${String(s).padStart(2,"0")}`:`${fa(s)} ثانیه`;
+  },1000);
 }
 
-function updateFooterTime() {
-  const now = new Date();
-  document.getElementById("footer-time").textContent =
-    "بارگذاری: " + now.toLocaleTimeString("fa-IR");
-}
+/* ── اجرای اولیه ── */
+(function init(){
+  const t=localStorage.getItem("theme")||"dark";
+  document.documentElement.setAttribute("data-theme",t);
+  document.getElementById("theme-btn").textContent=t==="dark"?"☀️":"🌙";
 
-/* ══════════════════════════════════════════════════════════
-   تغییر تم
-══════════════════════════════════════════════════════════ */
-function toggleTheme() {
-  const html  = document.documentElement;
-  const isDark = html.getAttribute("data-theme") === "dark";
-  html.setAttribute("data-theme", isDark ? "light" : "dark");
-  document.getElementById("theme-icon").textContent = isDark ? "🌙" : "☀️";
-  localStorage.setItem("theme", isDark ? "light" : "dark");
-
-  // بازسازی نمودارها برای رنگ‌های جدید
-  if (statsData) {
-    renderCategoryChart();
-    renderHourlyChart();
-    renderGroupChart();
-  }
-}
-
-/* ══════════════════════════════════════════════════════════
-   شمارنده معکوس تازه‌سازی
-══════════════════════════════════════════════════════════ */
-function startCountdown() {
-  let remaining = AUTO_REFRESH_MS / 1000;
-  const badge   = document.querySelector(".live-badge span");
-
-  setInterval(() => {
-    remaining--;
-    if (remaining <= 0) remaining = AUTO_REFRESH_MS / 1000;
-    const min = Math.floor(remaining / 60);
-    const sec = remaining % 60;
-    if (badge) {
-      badge.textContent = min > 0
-        ? `${min}:${String(sec).padStart(2,"0")} دیگر`
-        : `${sec} ثانیه`;
-    }
-  }, 1000);
-}
-
-/* ══════════════════════════════════════════════════════════
-   اجرای اولیه
-══════════════════════════════════════════════════════════ */
-(function init() {
-  // بازگردانی تم ذخیره‌شده
-  const savedTheme = localStorage.getItem("theme") || "dark";
-  document.documentElement.setAttribute("data-theme", savedTheme);
-  document.getElementById("theme-icon").textContent =
-    savedTheme === "dark" ? "☀️" : "🌙";
-
-  // بارگذاری اولیه
-  loadData();
-
-  // بارگذاری خودکار هر ۵ دقیقه
-  setInterval(() => loadData(), AUTO_REFRESH_MS);
-
-  // شمارنده
+  loadAll();
+  setInterval(()=>loadAll(),REFRESH_MS);
   startCountdown();
-
-  // به‌روزرسانی زمان footer
-  setInterval(updateFooterTime, 60000);
+  setInterval(()=>{
+    document.getElementById("foot-time").textContent=
+      "بارگذاری: "+new Date().toLocaleTimeString("fa-IR");
+  },60000);
 })();
 </script>
 </body>
